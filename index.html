@@ -3,29 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Fallos</title>
+    <title>Buscador de Fallos Jurídicos</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>Buscador de Fallos</h1>
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-balance-scale"></i>
+                    <h1>Buscador de Fallos Jurídicos</h1>
+                </div>
+                <p class="subtitle">Encuentra fallos jurídicos de manera rápida y eficiente</p>
+            </div>
+        </div>
+    </div>
 
-        <div class="search-filters">
-            <input type="text" id="palabraLibre" placeholder="Buscar por palabra libre...">
-            <input type="number" id="anio" placeholder="Año">
-            <input type="text" id="tribunal" placeholder="Tribunal">
-            <div id="tribunalSugerencias" class="sugerencias"></div>
-            <input type="text" id="palabrasClave" placeholder="Palabras Clave">
-            <select id="categoria">
-                <option value="">-- Seleccionar Categoría --</option>
-            </select>
-            <input type="text" id="subcategoria" placeholder="Subcategoría">
-            <div id="subcategoriaSugerencias" class="sugerencias"></div>
-            <button id="buscar">Buscar</button>
+    <div class="container">
+        <div class="search-card">
+            <div class="search-header">
+                <h2><i class="fas fa-filter"></i> Filtros de Búsqueda</h2>
+                <div class="search-actions">
+                    <button id="toggleAdvanced" class="btn-secondary">
+                        <i class="fas fa-cog"></i> Filtros Avanzados
+                    </button>
+                    <button id="clearFilters" class="btn-outline">
+                        <i class="fas fa-times"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+
+            <div class="search-filters">
+                <!-- Búsqueda libre -->
+                <div class="input-group full-width">
+                    <label for="palabraLibre">Búsqueda libre</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="palabraLibre" placeholder="Buscar en nombre, carátula, resumen o sumarios...">
+                    </div>
+                </div>
+
+                <!-- Filtros básicos -->
+                <div class="input-group">
+                    <label for="anio">Año</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-calendar"></i>
+                        <input type="number" id="anio" placeholder="Ej: 2023" min="1900" max="2024">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="categoria">Categoría</label>
+                    <div class="select-wrapper">
+                        <select id="categoria">
+                            <option value="">-- Seleccionar Categoría --</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+
+                <div class="input-group autocomplete-container">
+                    <label for="tribunal">Tribunal</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-building"></i>
+                        <input type="text" id="tribunal" placeholder="Nombre del tribunal">
+                    </div>
+                    <div id="tribunalSugerencias" class="sugerencias"></div>
+                </div>
+
+                <!-- Filtros avanzados -->
+                <div id="advancedFilters" class="advanced-filters">
+                    <div class="input-group autocomplete-container">
+                        <label for="subcategoria">Subcategoría</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-tags"></i>
+                            <input type="text" id="subcategoria" placeholder="Subcategoría específica">
+                        </div>
+                        <div id="subcategoriaSugerencias" class="sugerencias"></div>
+                    </div>
+
+                    <div class="input-group autocomplete-container">
+                        <label for="palabrasClave">Palabras Clave</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-key"></i>
+                            <input type="text" id="palabrasClave" placeholder="Palabras clave específicas">
+                        </div>
+                        <div id="palabrasClavesSugerencias" class="sugerencias"></div>
+                    </div>
+                </div>
+
+                <div class="search-button-container">
+                    <button id="buscar" class="btn-primary">
+                        <i class="fas fa-search"></i>
+                        <span>Buscar Fallos</span>
+                        <div class="loading-spinner"></div>
+                    </button>
+                </div>
+            </div>
         </div>
 
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" class="loading-container">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>Buscando fallos...</p>
+            </div>
+        </div>
+
+        <!-- Results -->
         <div id="resultados"></div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="pagination-container"></div>
     </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Buscador de Fallos Jurídicos. Todos los derechos reservados.</p>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="app.js"></script>
