@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Fallos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Buscador de Fallos</h1>
+
+        <div class="search-filters">
+            <input type="text" id="palabraLibre" placeholder="Buscar por palabra libre...">
+            <input type="number" id="anio" placeholder="Año">
+            <input type="text" id="tribunal" placeholder="Tribunal">
+            <div id="tribunalSugerencias" class="sugerencias"></div>
+            <input type="text" id="palabrasClave" placeholder="Palabras Clave">
+            <select id="categoria">
+                <option value="">-- Seleccionar Categoría --</option>
+            </select>
+            <input type="text" id="subcategoria" placeholder="Subcategoría">
+            <div id="subcategoriaSugerencias" class="sugerencias"></div>
+            <button id="buscar">Buscar</button>
+        </div>
+
+        <div id="resultados"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
