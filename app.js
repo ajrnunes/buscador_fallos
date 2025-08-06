@@ -31,6 +31,31 @@ let totalResults = 0;
 const resultsPerPage = 10;
 let allResults = [];
 
+// Utility functions
+function escapeHtml(text) {
+    if (typeof text !== 'string') return text;
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     cargarCategorias();
@@ -167,6 +192,19 @@ function hideAllSuggestions() {
 
 // Search functionality
 async function buscarFallos() {
+    // Validar que al menos un campo tenga contenido
+    const hasSearchTerm = palabraLibreInput.value.trim() || 
+                         anioInput.value || 
+                         tribunalInput.value.trim() || 
+                         palabrasClaveInput.value.trim() || 
+                         categoriaSelect.value || 
+                         subcategoriaInput.value.trim();
+
+    if (!hasSearchTerm) {
+        showNotification('Por favor, introduce al menos un criterio de búsqueda', 'error');
+        return;
+    }
+
     // Show loading
     showLoading();
     hideAllSuggestions();
@@ -174,23 +212,26 @@ async function buscarFallos() {
     try {
         let query = supabase.from('bas_fallos').select('*');
 
-        // Apply filters
+        // Apply filters with better sanitization
         if (anioInput.value) {
-            query = query.like('Fecha_Fallo', `${anioInput.value}%`);
+            const año = parseInt(anioInput.value);
+            if (año && año >= 1900 && año <= new Date().getFullYear()) {
+                query = query.like('Fecha_Fallo', `${año}%`);
+            }
         }
-        if (tribunalInput.value) {
-            query = query.ilike('Tribunal', `%${tribunalInput.value}%`);
+        if (tribunalInput.value.trim()) {
+            query = query.ilike('Tribunal', `%${tribunalInput.value.trim()}%`);
         }
-        if (palabrasClaveInput.value) {
-            query = query.ilike('Palabras_Clave', `%${palabrasClaveInput.value}%`);
+        if (palabrasClaveInput.value.trim()) {
+            query = query.ilike('Palabras_Clave', `%${palabrasClaveInput.value.trim()}%`);
         }
         if (categoriaSelect.value) {
             query = query.eq('Categoria', categoriaSelect.value);
         }
-        if (subcategoriaInput.value) {
-            query = query.ilike('Subcategoria', `%${subcategoriaInput.value}%`);
+        if (subcategoriaInput.value.trim()) {
+            query = query.ilike('Subcategoria', `%${subcategoriaInput.value.trim()}%`);
         }
-        if (palabraLibreInput.value) {
+        if (palabraLibreInput.value.trim()) {
             const searchTerm = palabraLibreInput.value.trim();
             query = query.or(`Nombre.ilike.%${searchTerm}%,Caratula.ilike.%${searchTerm}%,Resumen.ilike.%${searchTerm}%,Sumarios.ilike.%${searchTerm}%`);
         }
@@ -207,7 +248,7 @@ async function buscarFallos() {
         
     } catch (error) {
         console.error('Error en la búsqueda:', error);
-        showNotification('Error al realizar la búsqueda', 'error');
+        showNotification('Error al realizar la búsqueda. Por favor, intenta nuevamente.', 'error');
         hideLoading();
         resultadosDiv.innerHTML = '';
         resultadosDiv.classList.remove('show');
@@ -236,68 +277,83 @@ function mostrarResultados() {
     `;
 
     currentResults.forEach(fallo => {
-        const palabrasClave = fallo.Palabras_Clave ? fallo.Palabras_Clave.split(',').map(p => p.trim()).filter(p => p) : [];
+        // Sanitizar y validar datos
+        const nombre = fallo.Nombre || 'Nombre no disponible';
+        const caratula = fallo.Caratula || 'Carátula no disponible';
+        const tribunal = fallo.Tribunal || 'Tribunal no especificado';
+        const fecha = fallo.Fecha_Fallo || 'Fecha no disponible';
+        const resumen = fallo.Resumen || 'Resumen no disponible';
+        const link = fallo.Link_de_Drive || '#';
+        
+        const palabrasClave = fallo.Palabras_Clave ? 
+            fallo.Palabras_Clave.split(',')
+                .map(p => p.trim())
+                .filter(p => p.length > 0) : [];
         
         html += `
             <div class="fallo">
                 <div class="fallo-header">
                     <div class="fallo-title">
-                        <h2>${fallo.Nombre}</h2>
-                        <div class="fallo-caratula">${fallo.Caratula}</div>
+                        <h2>${escapeHtml(nombre)}</h2>
+                        <div class="fallo-caratula">${escapeHtml(caratula)}</div>
                         
                         <div class="fallo-meta">
                             <div class="fallo-meta-item">
                                 <i class="fas fa-building"></i>
-                                <span>${fallo.Tribunal}</span>
+                                <span>${escapeHtml(tribunal)}</span>
                             </div>
                             <div class="fallo-meta-item">
                                 <i class="fas fa-calendar"></i>
-                                <span>${fallo.Fecha_Fallo}</span>
+                                <span>${escapeHtml(fecha)}</span>
                             </div>
                         </div>
                         
                         ${(fallo.Categoria || fallo.Subcategoria || palabrasClave.length > 0) ? `
                             <div class="fallo-tags">
-                                ${fallo.Categoria ? `<span class="tag">${fallo.Categoria}</span>` : ''}
-                                ${fallo.Subcategoria ? `<span class="tag">${fallo.Subcategoria}</span>` : ''}
-                                ${palabrasClave.slice(0, 3).map(palabra => `<span class="tag">${palabra}</span>`).join('')}
+                                ${fallo.Categoria ? `<span class="tag">${escapeHtml(fallo.Categoria)}</span>` : ''}
+                                ${fallo.Subcategoria ? `<span class="tag">${escapeHtml(fallo.Subcategoria)}</span>` : ''}
+                                ${palabrasClave.slice(0, 3).map(palabra => `<span class="tag">${escapeHtml(palabra)}</span>`).join('')}
                                 ${palabrasClave.length > 3 ? `<span class="tag">+${palabrasClave.length - 3} más</span>` : ''}
                             </div>
                         ` : ''}
                     </div>
                     
-                    <a href="${fallo.Link_de_Drive}" target="_blank" class="btn-info">
+                    <a href="${escapeHtml(link)}" target="_blank" class="btn-info" ${link === '#' ? 'style="pointer-events: none; opacity: 0.6;"' : ''}>
                         <i class="fas fa-external-link-alt"></i>
-                        Ver documento
+                        ${link === '#' ? 'No disponible' : 'Ver documento'}
                     </a>
                 </div>
                 
                 <div class="fallo-content">
                     <div class="fallo-section">
                         <h4>Resumen</h4>
-                        <p>${fallo.Resumen}</p>
+                        <p>${escapeHtml(resumen)}</p>
                     </div>
 
                     ${fallo.Normativa_Aplicada ? `
                         <div class="fallo-section">
                             <h4><i class="fas fa-gavel"></i> Normativa Aplicada</h4>
-                            <p>${fallo.Normativa_Aplicada}</p>
+                            <p>${escapeHtml(fallo.Normativa_Aplicada)}</p>
                         </div>
                     ` : ''}
                 </div>
                 
                 <div class="fallo-actions">
-                    <button class="btn-success ver-sumarios" data-id="${fallo.id}">
+                    <button class="btn-success ver-sumarios" data-id="${fallo.id}" aria-expanded="false">
                         <i class="fas fa-eye"></i>
                         Ver sumarios
                     </button>
                 </div>
                 
-                <div class="sumarios" id="sumarios-${fallo.id}">
+                <div class="sumarios" id="sumarios-${fallo.id}" aria-hidden="true">
                     <h4><i class="fas fa-list"></i> Sumarios</h4>
-                    ${fallo.Sumarios ? fallo.Sumarios.split('|').map(sumario => 
-                        `<div class="sumario-item">${sumario.trim()}</div>`
-                    ).join('') : '<div class="sumario-item">No hay sumarios disponibles</div>'}
+                    ${fallo.Sumarios ? 
+                        fallo.Sumarios.split('|')
+                            .map(sumario => sumario.trim())
+                            .filter(sumario => sumario.length > 0)
+                            .map(sumario => `<div class="sumario-item">${escapeHtml(sumario)}</div>`)
+                            .join('') || '<div class="sumario-item">No hay sumarios válidos disponibles</div>'
+                        : '<div class="sumario-item">No hay sumarios disponibles</div>'}
                 </div>
             </div>
         `;
@@ -308,9 +364,11 @@ function mostrarResultados() {
     resultadosDiv.innerHTML = html;
     resultadosDiv.classList.add('show');
     
-    // Add event listeners for summary buttons
-    document.querySelectorAll('.ver-sumarios').forEach(button => {
-        button.addEventListener('click', toggleSumarios);
+    // Add event listeners for summary buttons with delegation for better performance
+    resultadosDiv.addEventListener('click', function(e) {
+        if (e.target.closest('.ver-sumarios')) {
+            toggleSumarios(e);
+        }
     });
     
     // Show pagination if needed
@@ -337,7 +395,7 @@ function mostrarSinResultados() {
     paginationContainer.classList.remove('show');
 }
 
-// Toggle summaries - FUNCIÓN CORREGIDA
+// Toggle summaries - FUNCIÓN CORREGIDA Y OPTIMIZADA
 function toggleSumarios(event) {
     event.preventDefault();
     
@@ -347,9 +405,14 @@ function toggleSumarios(event) {
     const falloId = button.dataset.id;
     const sumariosDiv = document.getElementById(`sumarios-${falloId}`);
     
-    if (!sumariosDiv) return;
+    if (!sumariosDiv) {
+        console.warn(`No se encontró elemento con ID: sumarios-${falloId}`);
+        return;
+    }
     
-    if (sumariosDiv.classList.contains('show')) {
+    const isVisible = sumariosDiv.classList.contains('show');
+    
+    if (isVisible) {
         // Ocultar sumarios
         sumariosDiv.classList.remove('show');
         button.innerHTML = '<i class="fas fa-eye"></i> Ver sumarios';
