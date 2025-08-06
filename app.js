@@ -276,7 +276,10 @@ function mostrarResultados() {
         <div class="results-container">
     `;
 
-    currentResults.forEach(fallo => {
+    currentResults.forEach((fallo, index) => {
+        // Generar un ID único consistente para este fallo
+        const falloId = fallo.ID || fallo.id || `fallo-${currentPage}-${index}`;
+        
         // Sanitizar y validar datos
         const nombre = fallo.Nombre || 'Nombre no disponible';
         const caratula = fallo.Caratula || 'Carátula no disponible';
@@ -339,13 +342,13 @@ function mostrarResultados() {
                 </div>
                 
                 <div class="fallo-actions">
-                    <button class="btn-success ver-sumarios" data-id="${fallo.id}" aria-expanded="false">
+                    <button class="btn-success ver-sumarios" data-fallo-id="${falloId}" aria-expanded="false">
                         <i class="fas fa-eye"></i>
                         Ver sumarios
                     </button>
                 </div>
                 
-                <div class="sumarios" id="sumarios-${fallo.id}" aria-hidden="true">
+                <div class="sumarios" id="sumarios-${falloId}" aria-hidden="true">
                     <h4><i class="fas fa-list"></i> Sumarios</h4>
                     ${fallo.Sumarios ? 
                         fallo.Sumarios.split('|')
@@ -391,24 +394,27 @@ function mostrarSinResultados() {
     paginationContainer.classList.remove('show');
 }
 
-// Setup event listeners for sumarios buttons
+// VERSIÓN CORREGIDA: Setup event listeners for sumarios buttons
 function setupSumariosListeners() {
-    // Remover listeners anteriores si existen
-    const existingButtons = document.querySelectorAll('.ver-sumarios');
-    existingButtons.forEach(button => {
-        // Clonar el botón para remover todos los event listeners
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
-    });
+    // Seleccionar todos los botones de sumarios y agregar listeners individuales
+    const botonesSumarios = document.querySelectorAll('.ver-sumarios');
     
-    // Agregar nuevos listeners
-    document.querySelectorAll('.ver-sumarios').forEach(button => {
-        button.addEventListener('click', function(e) {
+    botonesSumarios.forEach(boton => {
+        // Crear una función específica para este botón
+        boton.onclick = function(e) {
             e.preventDefault();
             e.stopPropagation();
             
-            const falloId = this.dataset.id;
+            const falloId = this.getAttribute('data-fallo-id');
+            console.log('Click en botón, falloId:', falloId); // Debug
+            
+            if (!falloId) {
+                console.error('No se encontró data-fallo-id en el botón');
+                return;
+            }
+            
             const sumariosDiv = document.getElementById(`sumarios-${falloId}`);
+            console.log('Elemento sumarios encontrado:', sumariosDiv); // Debug
             
             if (!sumariosDiv) {
                 console.error(`No se encontró elemento con ID: sumarios-${falloId}`);
@@ -416,6 +422,7 @@ function setupSumariosListeners() {
             }
             
             const isVisible = sumariosDiv.classList.contains('show');
+            console.log('Es visible:', isVisible); // Debug
             
             if (isVisible) {
                 // Ocultar sumarios
@@ -430,15 +437,8 @@ function setupSumariosListeners() {
                 this.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar sumarios';
                 this.setAttribute('aria-expanded', 'true');
             }
-        });
+        };
     });
-}
-
-// Toggle summaries - FUNCIÓN SIMPLIFICADA (ya no se usa directamente)
-function toggleSumarios(event) {
-    // Esta función ahora solo se mantiene por compatibilidad
-    // La lógica principal está en setupSumariosListeners
-    console.warn('toggleSumarios llamada directamente - usar setupSumariosListeners en su lugar');
 }
 
 // Pagination
