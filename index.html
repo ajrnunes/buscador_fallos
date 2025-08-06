@@ -3,40 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Jurisprudencia - N & A</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Buscador de Fallos Jurídicos</title>
+    
+    <!-- Librerías Externas -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tu Hoja de Estilos -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="header">
+    <!-- Encabezado de la Página -->
+    <header class="header">
         <div class="container">
             <div class="header-content">
                 <div class="logo">
                     <i class="fas fa-balance-scale"></i>
-                    <h1>Buscador de Jurisprudencia - N & A</h1>
+                    <h1>Buscador de Fallos Jurídicos</h1>
                 </div>
-                <p class="subtitle">Prototipo de prueba</p>
+                <p class="subtitle">Encuentra fallos jurídicos de manera rápida y eficiente</p>
             </div>
         </div>
-    </div>
+    </header>
 
-    <div class="container">
+    <!-- Contenido Principal -->
+    <main class="container">
         <div class="search-card">
             <div class="search-header">
                 <h2><i class="fas fa-filter"></i> Filtros de Búsqueda</h2>
                 <div class="search-actions">
-                    <button id="toggleAdvanced" class="btn-secondary">
-                        <i class="fas fa-cog"></i> Filtros Avanzados
-                    </button>
                     <button id="clearFilters" class="btn-outline">
-                        <i class="fas fa-times"></i> Limpiar
+                        <i class="fas fa-times"></i> Limpiar Filtros
                     </button>
                 </div>
             </div>
 
             <div class="search-filters">
-                <!-- Búsqueda libre -->
+                <!-- Búsqueda libre (ocupa todo el ancho) -->
                 <div class="input-group full-width">
                     <label for="palabraLibre">Búsqueda libre</label>
                     <div class="input-with-icon">
@@ -45,12 +48,12 @@
                     </div>
                 </div>
 
-                <!-- Filtros básicos -->
+                <!-- Filtros específicos -->
                 <div class="input-group">
-                    <label for="anio">Año</label>
+                    <label for="anio">Año del Fallo</label>
                     <div class="input-with-icon">
-                        <i class="fas fa-calendar"></i>
-                        <input type="number" id="anio" placeholder="Ej: 2023" min="1900" max="2024">
+                        <i class="fas fa-calendar-alt"></i>
+                        <input type="number" id="anio" placeholder="Ej: 2023" min="1900" max="2099">
                     </div>
                 </div>
 
@@ -58,7 +61,7 @@
                     <label for="categoria">Categoría</label>
                     <div class="select-wrapper">
                         <select id="categoria">
-                            <option value="">-- Seleccionar Categoría --</option>
+                            <option value="">-- Todas las Categorías --</option>
                         </select>
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -67,33 +70,31 @@
                 <div class="input-group autocomplete-container">
                     <label for="tribunal">Tribunal</label>
                     <div class="input-with-icon">
-                        <i class="fas fa-building"></i>
+                        <i class="fas fa-gavel"></i>
                         <input type="text" id="tribunal" placeholder="Nombre del tribunal">
                     </div>
                     <div id="tribunalSugerencias" class="sugerencias"></div>
                 </div>
-
-                <!-- Filtros avanzados -->
-                <div id="advancedFilters" class="advanced-filters">
-                    <div class="input-group autocomplete-container">
-                        <label for="subcategoria">Subcategoría</label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-tags"></i>
-                            <input type="text" id="subcategoria" placeholder="Subcategoría específica">
-                        </div>
-                        <div id="subcategoriaSugerencias" class="sugerencias"></div>
+                
+                <div class="input-group autocomplete-container">
+                    <label for="subcategoria">Subcategoría</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-tags"></i>
+                        <input type="text" id="subcategoria" placeholder="Subcategoría específica">
                     </div>
-
-                    <div class="input-group autocomplete-container">
-                        <label for="palabrasClave">Palabras Clave</label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-key"></i>
-                            <input type="text" id="palabrasClave" placeholder="Palabras clave específicas">
-                        </div>
-                        <div id="palabrasClavesSugerencias" class="sugerencias"></div>
-                    </div>
+                    <div id="subcategoriaSugerencias" class="sugerencias"></div>
                 </div>
 
+                <div class="input-group autocomplete-container">
+                    <label for="palabrasClave">Palabras Clave</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-key"></i>
+                        <input type="text" id="palabrasClave" placeholder="Ej: Despido, Indemnización...">
+                    </div>
+                    <div id="palabrasClavesSugerencias" class="sugerencias"></div>
+                </div>
+
+                <!-- Botón de Búsqueda -->
                 <div class="search-button-container">
                     <button id="buscar" class="btn-primary">
                         <i class="fas fa-search"></i>
@@ -104,27 +105,27 @@
             </div>
         </div>
 
-        <!-- Loading indicator -->
-        <div id="loadingIndicator" class="loading-container">
-            <div class="loading-content">
-                <div class="spinner"></div>
-                <p>Buscando fallos...</p>
-            </div>
+        <!-- Indicador de Carga -->
+        <div id="loadingIndicator">
+             <div class="spinner"></div>
+             <p>Buscando fallos...</p>
         </div>
 
-        <!-- Results -->
+        <!-- Contenedor de Resultados -->
         <div id="resultados"></div>
 
-        <!-- Pagination -->
+        <!-- Contenedor de Paginación -->
         <div id="pagination" class="pagination-container"></div>
-    </div>
+    </main>
 
+    <!-- Pie de Página -->
     <footer class="footer">
         <div class="container">
             <p>&copy; 2024 Buscador de Fallos Jurídicos. Todos los derechos reservados.</p>
         </div>
     </footer>
 
+    <!-- Scripts (al final del body para mejor rendimiento) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="app.js"></script>
 </body>
