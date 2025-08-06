@@ -470,6 +470,8 @@ select {
 }
 
 .fallo {
+    /* IMPORTANTE: Posición relativa para contener los sumarios */
+    position: relative;
     padding: 2rem;
     border-bottom: 1px solid #f7fafc;
     transition: background-color 0.2s ease;
@@ -571,26 +573,54 @@ select {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
+    margin-bottom: 1rem; /* Agregar margen inferior */
 }
 
+/* SUMARIOS - ESTA ES LA CLAVE DEL FIX */
 .sumarios {
-    margin-top: 1rem;
+    /* Posición relativa dentro del fallo padre */
+    position: relative;
+    width: 100%;
+    margin-top: 0; /* Sin margin-top para evitar saltos */
     padding: 1.5rem;
     background: #f7fafc;
     border-radius: 8px;
     border-left: 4px solid #667eea;
+    
+    /* Estado oculto por defecto */
     display: none;
-    animation: slideDown 0.3s ease;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
 }
 
 .sumarios.show {
     display: block;
+    opacity: 1;
+    transform: translateY(0);
+    animation: slideDownSmooth 0.3s ease;
+}
+
+@keyframes slideDownSmooth {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 500px;
+    }
 }
 
 .sumarios h4 {
     font-weight: 600;
     color: #2d3748;
     margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .sumario-item {
