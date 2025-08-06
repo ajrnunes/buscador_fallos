@@ -364,12 +364,8 @@ function mostrarResultados() {
     resultadosDiv.innerHTML = html;
     resultadosDiv.classList.add('show');
     
-    // Add event listeners for summary buttons with delegation for better performance
-    resultadosDiv.addEventListener('click', function(e) {
-        if (e.target.closest('.ver-sumarios')) {
-            toggleSumarios(e);
-        }
-    });
+    // Configurar event listeners para botones de sumarios
+    setupSumariosListeners();
     
     // Show pagination if needed
     if (totalResults > resultsPerPage) {
@@ -395,34 +391,54 @@ function mostrarSinResultados() {
     paginationContainer.classList.remove('show');
 }
 
-// Toggle summaries - FUNCIÓN CORREGIDA Y OPTIMIZADA
+// Setup event listeners for sumarios buttons
+function setupSumariosListeners() {
+    // Remover listeners anteriores si existen
+    const existingButtons = document.querySelectorAll('.ver-sumarios');
+    existingButtons.forEach(button => {
+        // Clonar el botón para remover todos los event listeners
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+    });
+    
+    // Agregar nuevos listeners
+    document.querySelectorAll('.ver-sumarios').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const falloId = this.dataset.id;
+            const sumariosDiv = document.getElementById(`sumarios-${falloId}`);
+            
+            if (!sumariosDiv) {
+                console.error(`No se encontró elemento con ID: sumarios-${falloId}`);
+                return;
+            }
+            
+            const isVisible = sumariosDiv.classList.contains('show');
+            
+            if (isVisible) {
+                // Ocultar sumarios
+                sumariosDiv.classList.remove('show');
+                sumariosDiv.setAttribute('aria-hidden', 'true');
+                this.innerHTML = '<i class="fas fa-eye"></i> Ver sumarios';
+                this.setAttribute('aria-expanded', 'false');
+            } else {
+                // Mostrar sumarios
+                sumariosDiv.classList.add('show');
+                sumariosDiv.setAttribute('aria-hidden', 'false');
+                this.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar sumarios';
+                this.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+}
+
+// Toggle summaries - FUNCIÓN SIMPLIFICADA (ya no se usa directamente)
 function toggleSumarios(event) {
-    event.preventDefault();
-    
-    const button = event.target.closest('.ver-sumarios');
-    if (!button) return;
-    
-    const falloId = button.dataset.id;
-    const sumariosDiv = document.getElementById(`sumarios-${falloId}`);
-    
-    if (!sumariosDiv) {
-        console.warn(`No se encontró elemento con ID: sumarios-${falloId}`);
-        return;
-    }
-    
-    const isVisible = sumariosDiv.classList.contains('show');
-    
-    if (isVisible) {
-        // Ocultar sumarios
-        sumariosDiv.classList.remove('show');
-        button.innerHTML = '<i class="fas fa-eye"></i> Ver sumarios';
-        button.setAttribute('aria-expanded', 'false');
-    } else {
-        // Mostrar sumarios
-        sumariosDiv.classList.add('show');
-        button.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar sumarios';
-        button.setAttribute('aria-expanded', 'true');
-    }
+    // Esta función ahora solo se mantiene por compatibilidad
+    // La lógica principal está en setupSumariosListeners
+    console.warn('toggleSumarios llamada directamente - usar setupSumariosListeners en su lugar');
 }
 
 // Pagination
