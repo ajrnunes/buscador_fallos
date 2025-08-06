@@ -17,7 +17,7 @@ const subcategoriaSugerencias = document.getElementById('subcategoriaSugerencias
 // --- Carga inicial de filtros ---
 async function cargarCategorias() {
     const { data, error } = await supabase
-        .from('base_juris_1')
+        .from('bas_fallos')
         .select('Categoria');
 
     if (error) {
@@ -46,7 +46,7 @@ async function autocompletar(input, sugerenciasDiv, columna) {
     }
 
     const { data, error } = await supabase
-        .from('base_juris_1')
+        .from('bas_fallos')
         .select(columna)
         .ilike(columna, `%${valor}%`);
 
@@ -81,7 +81,7 @@ subcategoriaInput.addEventListener('keyup', () => autocompletar(subcategoriaInpu
 
 // --- Funcionalidad de búsqueda ---
 async function buscarFallos() {
-    let query = supabase.from('base_juris_1').select('*');
+    let query = supabase.from('bas_fallos').select('*');
 
     // Construcción de la consulta
     if (anioInput.value) {
