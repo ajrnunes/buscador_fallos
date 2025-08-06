@@ -50,16 +50,18 @@ function setupEventListeners() {
     });
 
     // Advanced filters toggle
-    toggleAdvancedBtn.addEventListener('click', function() {
-        const isVisible = advancedFilters.classList.contains('show');
-        if (isVisible) {
-            advancedFilters.classList.remove('show');
-            this.innerHTML = '<i class="fas fa-cog"></i> Filtros Avanzados';
-        } else {
-            advancedFilters.classList.add('show');
-            this.innerHTML = '<i class="fas fa-cog"></i> Ocultar Filtros';
-        }
-    });
+    if (toggleAdvancedBtn) {
+        toggleAdvancedBtn.addEventListener('click', function() {
+            const isVisible = advancedFilters.classList.contains('show');
+            if (isVisible) {
+                advancedFilters.classList.remove('show');
+                this.innerHTML = '<i class="fas fa-cog"></i> Filtros Avanzados';
+            } else {
+                advancedFilters.classList.add('show');
+                this.innerHTML = '<i class="fas fa-cog"></i> Ocultar Filtros';
+            }
+        });
+    }
 
     // Clear filters
     clearFiltersBtn.addEventListener('click', clearAllFilters);
@@ -115,7 +117,7 @@ async function autocompletar(input, sugerenciasDiv, columna) {
             .from('bas_fallos')
             .select(columna)
             .ilike(columna, `%${valor}%`)
-            .limit(50); // Aumentamos el límite para obtener una mejor muestra
+            .limit(50);
 
         if (error) throw error;
 
@@ -129,7 +131,7 @@ async function autocompletar(input, sugerenciasDiv, columna) {
                 .filter(kw => kw); // Eliminar strings vacíos
             
             const palabrasCoincidentes = [...new Set(todasLasPalabras.filter(kw => kw.toLowerCase().includes(valor)))];
-            sugerenciasUnicas = palabrasCoincidentes.slice(0, 10); // Limitar el número de sugerencias
+            sugerenciasUnicas = palabrasCoincidentes.slice(0, 10);
         } else {
             // Comportamiento normal para otras columnas
             sugerenciasUnicas = [...new Set(data.map(item => item[columna]).filter(Boolean))];
@@ -155,7 +157,6 @@ async function autocompletar(input, sugerenciasDiv, columna) {
         console.error('Error en autocompletar:', error);
     }
 }
-
 
 // Hide all suggestions
 function hideAllSuggestions() {
@@ -277,7 +278,6 @@ function mostrarResultados() {
                         <p>${fallo.Resumen}</p>
                     </div>
 
-                    <!-- NUEVA SECCIÓN: Normativa Aplicada -->
                     ${fallo.Normativa_Aplicada ? `
                         <div class="fallo-section">
                             <h4><i class="fas fa-gavel"></i> Normativa Aplicada</h4>
@@ -295,9 +295,9 @@ function mostrarResultados() {
                 
                 <div class="sumarios" id="sumarios-${fallo.id}">
                     <h4><i class="fas fa-list"></i> Sumarios</h4>
-                    ${fallo.Sumarios.split('|').map(sumario => 
+                    ${fallo.Sumarios ? fallo.Sumarios.split('|').map(sumario => 
                         `<div class="sumario-item">${sumario.trim()}</div>`
-                    ).join('')}
+                    ).join('') : '<div class="sumario-item">No hay sumarios disponibles</div>'}
                 </div>
             </div>
         `;
@@ -337,19 +337,28 @@ function mostrarSinResultados() {
     paginationContainer.classList.remove('show');
 }
 
-// Toggle summaries
+// Toggle summaries - FUNCIÓN CORREGIDA
 function toggleSumarios(event) {
+    event.preventDefault();
+    
     const button = event.target.closest('.ver-sumarios');
+    if (!button) return;
+    
     const falloId = button.dataset.id;
     const sumariosDiv = document.getElementById(`sumarios-${falloId}`);
-    const icon = button.querySelector('i');
+    
+    if (!sumariosDiv) return;
     
     if (sumariosDiv.classList.contains('show')) {
+        // Ocultar sumarios
         sumariosDiv.classList.remove('show');
         button.innerHTML = '<i class="fas fa-eye"></i> Ver sumarios';
+        button.setAttribute('aria-expanded', 'false');
     } else {
+        // Mostrar sumarios
         sumariosDiv.classList.add('show');
         button.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar sumarios';
+        button.setAttribute('aria-expanded', 'true');
     }
 }
 
