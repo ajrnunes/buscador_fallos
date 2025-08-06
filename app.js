@@ -487,4 +487,4 @@ function showNotification(message, type = 'info') {
         notification.style.animation = 'slideInRight 0.3s ease reverse';
         setTimeout(() => notification.remove(), 300);
     }, 3000);
-}```
+}
