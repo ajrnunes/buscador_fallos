@@ -32,24 +32,20 @@ body {
     text-align: center;
 }
 
-.logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
+/* Nuevo estilo para el logo de la firma en el encabezado principal */
+.firm-main-logo {
+    max-width: 400px; /* Ajusta este valor según el tamaño deseado */
+    height: auto;
+    display: block; /* Para que margin: auto funcione correctamente */
+    margin: 0 auto 1rem auto; /* Centra la imagen y añade margen inferior */
 }
 
-.logo i {
-    font-size: 2.5rem;
-    color: #667eea;
-}
-
-.logo h1 {
-    font-size: 2.5rem;
+/* Ajuste del h1 principal para que coincida con el nuevo layout */
+.header-content h1 {
+    font-size: 2rem; /* Tamaño de fuente para el título de la aplicación */
     font-weight: 700;
     color: #2d3748;
-    margin: 0;
+    margin: 0 0 0.5rem 0; /* Margen inferior para separar del subtítulo */
 }
 
 .subtitle {
@@ -687,14 +683,62 @@ select {
     color: #718096;
 }
 
+/* Styles for Instructions Page Sections */
+.info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem; /* Add spacing between cards */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.info-card section h2 { /* Targeting h2 within the section inside info-card */
+    font-size: 1.5rem; /* Keep consistent with search-header h2 */
+    font-weight: 600;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* Slightly more gap for clarity */
+    margin-bottom: 1.5rem; /* Add margin below h2 */
+}
+
+.info-card section h2 i {
+    color: #667eea; /* Primary color for icons */
+}
+
+.info-card ul {
+    list-style: disc; /* Keep default disc for now */
+    padding-left: 1.5rem; /* Standard indent for lists */
+    margin-top: 1rem;
+}
+
+.info-card ul li {
+    margin-bottom: 0.5rem; /* Spacing for list items */
+    color: #4a5568; /* Make list item text consistent with other text */
+}
+
+.info-card ul li:last-child {
+    margin-bottom: 0;
+}
+
+.info-card p {
+    margin-bottom: 1rem; /* Add some space below paragraphs */
+}
+
+
 /* Responsive */
 @media (max-width: 768px) {
     .container {
         padding: 0 15px;
     }
     
-    .logo h1 {
-        font-size: 2rem;
+    .firm-main-logo {
+        max-width: 300px; /* Ajusta para pantallas medianas */
+    }
+
+    .header-content h1 {
+        font-size: 1.8rem;
     }
     
     .search-card {
@@ -726,15 +770,22 @@ select {
     .fallo-actions {
         justify-content: center;
     }
+
+    .info-card { /* Adjust padding for smaller screens */
+        padding: 1.5rem;
+    }
+    .info-card section h2 {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
 }
 
 @media (max-width: 480px) {
-    .logo {
-        flex-direction: column;
-        gap: 0.5rem;
+    .firm-main-logo {
+        max-width: 250px; /* Ajusta para pantallas pequeñas */
     }
     
-    .logo h1 {
+    .header-content h1 {
         font-size: 1.5rem;
     }
     
@@ -749,5 +800,8 @@ select {
     .btn-primary, .btn-secondary, .btn-outline {
         padding: 10px 16px;
         font-size: 0.9rem;
+    }
+    .info-card { /* Adjust padding for very small screens */
+        padding: 1rem;
     }
 }
