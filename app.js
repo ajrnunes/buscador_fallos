@@ -191,13 +191,14 @@ function hideAllSuggestions() {
 }
 
 // Search functionality
+// Search functionality
 async function buscarFallos() {
     // Validar que al menos un campo tenga contenido
-    const hasSearchTerm = palabraLibreInput.value.trim() || 
-                         anioInput.value || 
-                         tribunalInput.value.trim() || 
-                         palabrasClaveInput.value.trim() || 
-                         categoriaSelect.value || 
+    const hasSearchTerm = palabraLibreInput.value.trim() ||
+                         anioInput.value ||
+                         tribunalInput.value.trim() ||
+                         palabrasClaveInput.value.trim() ||
+                         categoriaSelect.value ||
                          subcategoriaInput.value.trim();
 
     if (!hasSearchTerm) {
@@ -208,15 +209,27 @@ async function buscarFallos() {
     // Show loading
     showLoading();
     hideAllSuggestions();
-    
-    try {
-        let query = supabase.from('bas_fallos').select('*');
 
-        // Apply filters with better sanitization
+    try {
+        let query = supabase.from('bas_fallos').select('*', { count: 'exact' });
+
+        // 1. BÚSQUEDA DE TEXTO COMPLETO (LA GRAN MEJORA)
+        if (palabraLibreInput.value.trim()) {
+            const searchTerm = palabraLibreInput.value.trim();
+            // Usamos textSearch, que es el método del cliente de Supabase para usar nuestro índice GIN
+            query = query.textSearch('search_vector', searchTerm, {
+                type: 'websearch', // 'websearch' es ideal para múltiples palabras
+                config: 'spanish'
+            });
+        }
+
+        // 2. APLICAR FILTROS ESPECÍFICOS (igual que antes)
         if (anioInput.value) {
-            const año = parseInt(anioInput.value);
-            if (año && año >= 1900 && año <= new Date().getFullYear()) {
-                query = query.like('Fecha_Fallo', `${año}%`);
+            const anio = parseInt(anioInput.value);
+            if (!isNaN(anio) && anio >= 1900 && anio <= new Date().getFullYear() + 1) {
+                // Usamos gte (mayor o igual) y lte (menor o igual) para cubrir todo el año
+                query = query.gte('Fecha_Fallo', `${anio}-01-01`);
+                query = query.lte('Fecha_Fallo', `${anio}-12-31`);
             }
         }
         if (tribunalInput.value.trim()) {
@@ -231,21 +244,20 @@ async function buscarFallos() {
         if (subcategoriaInput.value.trim()) {
             query = query.ilike('Subcategoria', `%${subcategoriaInput.value.trim()}%`);
         }
-        if (palabraLibreInput.value.trim()) {
-            const searchTerm = palabraLibreInput.value.trim();
-            query = query.or(`Nombre.ilike.%${searchTerm}%,Caratula.ilike.%${searchTerm}%,Resumen.ilike.%${searchTerm}%,Sumarios.ilike.%${searchTerm}%`);
-        }
 
-        const { data, error } = await query.order('Fecha_Fallo', { ascending: false });
+        // La antigua y compleja cláusula ".or(...)" ya no es necesaria.
+
+        // 3. EJECUTAR LA CONSULTA (ahora no necesitamos count, ya lo pedimos en el select)
+        const { data, error, count } = await query.order('Fecha_Fallo', { ascending: false });
 
         if (error) throw error;
 
         allResults = data || [];
-        totalResults = allResults.length;
+        totalResults = count; // Usamos el count que nos devuelve Supabase, es más eficiente
         currentPage = 1;
-        
+
         mostrarResultados();
-        
+
     } catch (error) {
         console.error('Error en la búsqueda:', error);
         showNotification('Error al realizar la búsqueda. Por favor, intenta nuevamente.', 'error');
