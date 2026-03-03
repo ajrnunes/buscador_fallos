@@ -1,7 +1,8 @@
 const SUPABASE_URL = 'https://hleezrlqvdnwatwddcih.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsZWV6cmxxdmRud2F0d2RkY2loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0OTczOTQsImV4cCI6MjA3MDA3MzM5NH0.ah3ybvbk7_HVrsOc_esK_BolcIyzY1EN7wzSb0qYBL8';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Cambiamos el nombre a supabaseClient para evitar el error de "already declared"
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // DOM Elements
 const palabraLibreInput = document.getElementById('palabraLibre');
@@ -44,18 +45,6 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     cargarCategorias();
@@ -64,17 +53,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Event Listeners
 function setupEventListeners() {
-    // Search functionality
     buscarBtn.addEventListener('click', buscarFallos);
     
-    // Enter key search
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && !e.target.closest('.sugerencias')) {
             buscarFallos();
         }
     });
 
-    // Advanced filters toggle
     if (toggleAdvancedBtn) {
         toggleAdvancedBtn.addEventListener('click', function() {
             const isVisible = advancedFilters.classList.contains('show');
@@ -88,15 +74,12 @@ function setupEventListeners() {
         });
     }
 
-    // Clear filters
     clearFiltersBtn.addEventListener('click', clearAllFilters);
 
-    // Autocomplete
     tribunalInput.addEventListener('input', () => autocompletar(tribunalInput, tribunalSugerencias, 'Tribunal'));
     subcategoriaInput.addEventListener('input', () => autocompletar(subcategoriaInput, subcategoriaSugerencias, 'Subcategoria'));
     palabrasClaveInput.addEventListener('input', () => autocompletar(palabrasClaveInput, palabrasClavesSugerencias, 'Palabras_Clave'));
 
-    // Close suggestions when clicking outside
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.autocomplete-container')) {
             hideAllSuggestions();
@@ -107,7 +90,7 @@ function setupEventListeners() {
 // Load categories
 async function cargarCategorias() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('bas_fallos')
             .select('Categoria');
 
@@ -138,7 +121,7 @@ async function autocompletar(input, sugerenciasDiv, columna) {
     }
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('bas_fallos')
             .select(columna)
             .ilike(columna, `%${valor}%`)
@@ -149,16 +132,14 @@ async function autocompletar(input, sugerenciasDiv, columna) {
         let sugerenciasUnicas;
 
         if (columna === 'Palabras_Clave') {
-            // Procesamiento especial para palabras clave individuales
             const todasLasPalabras = data
                 .flatMap(item => item.Palabras_Clave ? item.Palabras_Clave.split(',') : [])
                 .map(kw => kw.trim())
-                .filter(kw => kw); // Eliminar strings vacíos
+                .filter(kw => kw);
             
             const palabrasCoincidentes = [...new Set(todasLasPalabras.filter(kw => kw.toLowerCase().includes(valor)))];
             sugerenciasUnicas = palabrasCoincidentes.slice(0, 10);
         } else {
-            // Comportamiento normal para otras columnas
             sugerenciasUnicas = [...new Set(data.map(item => item[columna]).filter(Boolean))];
         }
         
@@ -183,7 +164,6 @@ async function autocompletar(input, sugerenciasDiv, columna) {
     }
 }
 
-// Hide all suggestions
 function hideAllSuggestions() {
     tribunalSugerencias.classList.remove('show');
     subcategoriaSugerencias.classList.remove('show');
@@ -191,9 +171,7 @@ function hideAllSuggestions() {
 }
 
 // Search functionality
-// Search functionality
 async function buscarFallos() {
-    // Validar que al menos un campo tenga contenido
     const hasSearchTerm = palabraLibreInput.value.trim() ||
                          anioInput.value ||
                          tribunalInput.value.trim() ||
@@ -206,28 +184,23 @@ async function buscarFallos() {
         return;
     }
 
-    // Show loading
     showLoading();
     hideAllSuggestions();
 
     try {
-        let query = supabase.from('bas_fallos').select('*', { count: 'exact' });
+        let query = supabaseClient.from('bas_fallos').select('*', { count: 'exact' });
 
-        // 1. BÚSQUEDA DE TEXTO COMPLETO (LA GRAN MEJORA)
         if (palabraLibreInput.value.trim()) {
             const searchTerm = palabraLibreInput.value.trim();
-            // Usamos textSearch, que es el método del cliente de Supabase para usar nuestro índice GIN
             query = query.textSearch('search_vector', searchTerm, {
-                type: 'websearch', // 'websearch' es ideal para múltiples palabras
+                type: 'websearch',
                 config: 'spanish'
             });
         }
 
-        // 2. APLICAR FILTROS ESPECÍFICOS (igual que antes)
         if (anioInput.value) {
             const anio = parseInt(anioInput.value);
             if (!isNaN(anio) && anio >= 1900 && anio <= new Date().getFullYear() + 1) {
-                // Usamos gte (mayor o igual) y lte (menor o igual) para cubrir todo el año
                 query = query.gte('Fecha_Fallo', `${anio}-01-01`);
                 query = query.lte('Fecha_Fallo', `${anio}-12-31`);
             }
@@ -245,15 +218,12 @@ async function buscarFallos() {
             query = query.ilike('Subcategoria', `%${subcategoriaInput.value.trim()}%`);
         }
 
-        // La antigua y compleja cláusula ".or(...)" ya no es necesaria.
-
-        // 3. EJECUTAR LA CONSULTA (ahora no necesitamos count, ya lo pedimos en el select)
         const { data, error, count } = await query.order('Fecha_Fallo', { ascending: false });
 
         if (error) throw error;
 
         allResults = data || [];
-        totalResults = count; // Usamos el count que nos devuelve Supabase, es más eficiente
+        totalResults = count;
         currentPage = 1;
 
         mostrarResultados();
@@ -289,10 +259,7 @@ function mostrarResultados() {
     `;
 
     currentResults.forEach((fallo, index) => {
-        // Generar un ID único consistente para este fallo
         const falloId = fallo.ID || fallo.id || `fallo-${currentPage}-${index}`;
-        
-        // Sanitizar y validar datos
         const nombre = fallo.Nombre || 'Nombre no disponible';
         const caratula = fallo.Caratula || 'Carátula no disponible';
         const tribunal = fallo.Tribunal || 'Tribunal no especificado';
@@ -311,7 +278,6 @@ function mostrarResultados() {
                     <div class="fallo-title">
                         <h2>${escapeHtml(nombre)}</h2>
                         <div class="fallo-caratula">${escapeHtml(caratula)}</div>
-                        
                         <div class="fallo-meta">
                             <div class="fallo-meta-item">
                                 <i class="fas fa-building"></i>
@@ -322,7 +288,6 @@ function mostrarResultados() {
                                 <span>${escapeHtml(fecha)}</span>
                             </div>
                         </div>
-                        
                         ${(fallo.Categoria || fallo.Subcategoria || palabrasClave.length > 0) ? `
                             <div class="fallo-tags">
                                 ${fallo.Categoria ? `<span class="tag">${escapeHtml(fallo.Categoria)}</span>` : ''}
@@ -332,19 +297,16 @@ function mostrarResultados() {
                             </div>
                         ` : ''}
                     </div>
-                    
                     <a href="${escapeHtml(link)}" target="_blank" class="btn-info" ${link === '#' ? 'style="pointer-events: none; opacity: 0.6;"' : ''}>
                         <i class="fas fa-external-link-alt"></i>
                         ${link === '#' ? 'No disponible' : 'Ver documento'}
                     </a>
                 </div>
-                
                 <div class="fallo-content">
                     <div class="fallo-section">
                         <h4>Resumen</h4>
                         <p>${escapeHtml(resumen)}</p>
                     </div>
-
                     ${fallo.Normativa_Aplicada ? `
                         <div class="fallo-section">
                             <h4><i class="fas fa-gavel"></i> Normativa Aplicada</h4>
@@ -352,14 +314,12 @@ function mostrarResultados() {
                         </div>
                     ` : ''}
                 </div>
-                
                 <div class="fallo-actions">
                     <button class="btn-success ver-sumarios" data-fallo-id="${falloId}" aria-expanded="false">
                         <i class="fas fa-eye"></i>
                         Ver sumarios
                     </button>
                 </div>
-                
                 <div class="sumarios" id="sumarios-${falloId}" aria-hidden="true">
                     <h4><i class="fas fa-list"></i> Sumarios</h4>
                     ${fallo.Sumarios ? 
@@ -375,25 +335,19 @@ function mostrarResultados() {
     });
 
     html += '</div>';
-    
     resultadosDiv.innerHTML = html;
     resultadosDiv.classList.add('show');
-    
-    // Configurar event listeners para botones de sumarios
     setupSumariosListeners();
     
-    // Show pagination if needed
     if (totalResults > resultsPerPage) {
         mostrarPaginacion();
     } else {
         paginationContainer.classList.remove('show');
     }
     
-    // Scroll to results
     resultadosDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// Show no results
 function mostrarSinResultados() {
     resultadosDiv.innerHTML = `
         <div class="no-results">
@@ -406,44 +360,22 @@ function mostrarSinResultados() {
     paginationContainer.classList.remove('show');
 }
 
-// VERSIÓN CORREGIDA: Setup event listeners for sumarios buttons
 function setupSumariosListeners() {
-    // Seleccionar todos los botones de sumarios y agregar listeners individuales
     const botonesSumarios = document.querySelectorAll('.ver-sumarios');
-    
     botonesSumarios.forEach(boton => {
-        // Crear una función específica para este botón
         boton.onclick = function(e) {
             e.preventDefault();
-            e.stopPropagation();
-            
             const falloId = this.getAttribute('data-fallo-id');
-            console.log('Click en botón, falloId:', falloId); // Debug
-            
-            if (!falloId) {
-                console.error('No se encontró data-fallo-id en el botón');
-                return;
-            }
-            
             const sumariosDiv = document.getElementById(`sumarios-${falloId}`);
-            console.log('Elemento sumarios encontrado:', sumariosDiv); // Debug
-            
-            if (!sumariosDiv) {
-                console.error(`No se encontró elemento con ID: sumarios-${falloId}`);
-                return;
-            }
+            if (!sumariosDiv) return;
             
             const isVisible = sumariosDiv.classList.contains('show');
-            console.log('Es visible:', isVisible); // Debug
-            
             if (isVisible) {
-                // Ocultar sumarios
                 sumariosDiv.classList.remove('show');
                 sumariosDiv.setAttribute('aria-hidden', 'true');
                 this.innerHTML = '<i class="fas fa-eye"></i> Ver sumarios';
                 this.setAttribute('aria-expanded', 'false');
             } else {
-                // Mostrar sumarios
                 sumariosDiv.classList.add('show');
                 sumariosDiv.setAttribute('aria-hidden', 'false');
                 this.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar sumarios';
@@ -453,19 +385,16 @@ function setupSumariosListeners() {
     });
 }
 
-// Pagination
 function mostrarPaginacion() {
     const totalPages = Math.ceil(totalResults / resultsPerPage);
     let html = '';
     
-    // Previous button
     html += `
         <button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="cambiarPagina(${currentPage - 1})">
             <i class="fas fa-chevron-left"></i> Anterior
         </button>
     `;
     
-    // Page numbers
     const startPage = Math.max(1, currentPage - 2);
     const endPage = Math.min(totalPages, currentPage + 2);
     
@@ -491,7 +420,6 @@ function mostrarPaginacion() {
         html += `<button class="pagination-btn" onclick="cambiarPagina(${totalPages})">${totalPages}</button>`;
     }
     
-    // Next button
     html += `
         <button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="cambiarPagina(${currentPage + 1})">
             Siguiente <i class="fas fa-chevron-right"></i>
@@ -502,15 +430,12 @@ function mostrarPaginacion() {
     paginationContainer.classList.add('show');
 }
 
-// Change page
-function cambiarPagina(page) {
+window.cambiarPagina = function(page) {
     if (page < 1 || page > Math.ceil(totalResults / resultsPerPage)) return;
-    
     currentPage = page;
     mostrarResultados();
-}
+};
 
-// Clear all filters
 function clearAllFilters() {
     palabraLibreInput.value = '';
     anioInput.value = '';
@@ -518,15 +443,12 @@ function clearAllFilters() {
     palabrasClaveInput.value = '';
     categoriaSelect.value = '';
     subcategoriaInput.value = '';
-    
     hideAllSuggestions();
     resultadosDiv.classList.remove('show');
     paginationContainer.classList.remove('show');
-    
     showNotification('Filtros limpiados', 'success');
 }
 
-// Loading states
 function showLoading() {
     buscarBtn.classList.add('loading');
     loadingIndicator.classList.add('show');
@@ -539,9 +461,7 @@ function hideLoading() {
     loadingIndicator.classList.remove('show');
 }
 
-// Notifications
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.innerHTML = `
@@ -549,25 +469,15 @@ function showNotification(message, type = 'info') {
         <span>${message}</span>
     `;
     
-    // Add styles if not already added
     if (!document.querySelector('#notification-styles')) {
         const styles = document.createElement('style');
         styles.id = 'notification-styles';
         styles.textContent = `
             .notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 12px 20px;
-                border-radius: 8px;
-                color: white;
-                font-weight: 500;
-                z-index: 10000;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                animation: slideInRight 0.3s ease;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                position: fixed; top: 20px; right: 20px; padding: 12px 20px;
+                border-radius: 8px; color: white; font-weight: 500; z-index: 10000;
+                display: flex; align-items: center; gap: 8px;
+                animation: slideInRight 0.3s ease; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             }
             .notification-success { background: #48bb78; }
             .notification-error { background: #f56565; }
@@ -581,8 +491,6 @@ function showNotification(message, type = 'info') {
     }
     
     document.body.appendChild(notification);
-    
-    // Remove after 3 seconds
     setTimeout(() => {
         notification.style.animation = 'slideInRight 0.3s ease reverse';
         setTimeout(() => notification.remove(), 300);
