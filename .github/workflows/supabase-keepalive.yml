@@ -1,0 +1,25 @@
+name: Supabase Keepalive
+
+# Hace un ping semanal a la base para que Supabase no la pause por inactividad
+# (el plan gratuito pausa proyectos tras ~7 dias sin uso).
+
+on:
+  schedule:
+    # Todos los lunes a las 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -sS -X GET \
+            "${SUPABASE_URL}/rest/v1/" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            --fail
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
